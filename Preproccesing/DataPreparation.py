@@ -206,7 +206,13 @@ class DataPreparation:
             Ensure that missingness can be detected by pandas.
             """
             self.df = self.df.fillna(pd.NA)
-        
+
+        def sort_values():
+            """
+            Sorting the rows by RID and Month_bl columns
+            """
+            self.df = self.df.sort_values(by=['RID', 'Month_bl'], inplace=False)
+
         def write():
             """
             Save the preprocessed data as df_prepared.csv at directory_to_save.
@@ -230,4 +236,5 @@ class DataPreparation:
         enforce_dtype(self, column_name='NumCat', column_value='DxCat', new_dtype='string')
         add_dtype_to_df_cols()
         enforce_pandas_nan()
+        sort_values()
         write()
