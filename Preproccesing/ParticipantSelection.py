@@ -21,7 +21,7 @@ class ParticipantSelection:
             """
             Read the prepared data.
             """
-            self.df = pd.read_csv(self.directory_to_read + 'df_prepared_sorted.csv', low_memory=False)
+            self.df = pd.read_csv(self.directory_to_read + 'df_prepared.csv', low_memory=False)
             self.df_cols = pd.read_csv(self.directory_to_read + 'df_cols_prepared.csv', low_memory=False)
 
         def drop_no_dx():
