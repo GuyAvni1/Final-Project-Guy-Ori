@@ -117,30 +117,6 @@ class ParticipantSelection:
                     isimpConv.loc[i, 'isimpConv_' + str(year)] = 0
             self.df_trajs = pd.concat([df_trajs, isimpStab, isimpConv], axis=1)
 
-        def impute_stable_trajs_with_visits_after_year_5():
-            """"
-            Impute stable subjects' DX_5 column if they have a follow-up visit (in which they do not progress to the next disease stage) after year 5.
-            """
-            for dx_0 in ['CN', 'MCI']:
-                for i in range(len(self.df_trajs)):
-                    if self.df_trajs.loc[i, 'DX_0'] == dx_0:
-                        rid = self.df_bl.loc[i, 'RID']
-                        df_rid = self.df.loc[self.df['RID'] == rid].reset_index(drop=True)
-                        df_traj = df_rid[['VISCODE', 'DX']]
-                        df_traj_future = []
-                        flag = False
-                        for j in range(1, len(df_traj)):
-                            if int(df_traj.loc[j, 'VISCODE'][1:]) > 60:
-                                flag = True
-                            if flag:
-                                df_traj_future.append(df_traj.loc[j])
-                        if len(df_traj_future) != 0:
-                            df_traj = pd.DataFrame(df_traj_future).reset_index(drop=True)
-                            if dx_0 in list(df_traj['DX'].values) and pd.isna(self.df_trajs.loc[i, 'DX_5']):
-                                self.df_trajs.loc[i, 'M_5'] = 60
-                                self.df_trajs.loc[i, 'DX_5'] = dx_0
-                                self.df_trajs.loc[i, 'isimpStab_5'] = 1
-
         def remove_no_follow_ups():
             """
             Remove subjects without any follow-up.
@@ -169,37 +145,7 @@ class ParticipantSelection:
                     clean.append(self.df_trajs.loc[i])
             clean = pd.DataFrame(clean).reset_index(drop=True)
             self.df_trajs = clean
-
-        def impute_stable_trajs():
-            """
-            Imputes a missing diagnosis if the subject is CN/MCI at baseline and is diagnosed as CN/MCI in a later follow-up visit.
-            """
-            for dx_bl in ['CN', 'MCI']:
-                for i in range(len(self.df_trajs)):
-                    if self.df_trajs.loc[i, 'dx_bl'] == dx_bl:
-                        for year in range(4, 0, -1):
-                            dx_future = self.df_trajs.loc[i, 'DX_' + str(year + 1)]
-                            if pd.isna(dx_future) == False:
-                                if dx_future == dx_bl and pd.isna(self.df_trajs.loc[i, 'DX_' + str(year)]):
-                                    self.df_trajs.loc[i, 'M_' + str(year)] = year * 12
-                                    self.df_trajs.loc[i, 'DX_' + str(year)] = dx_bl
-                                    self.df_trajs.loc[i, 'isimpStab_' + str(year)] = 1
-
-        def impute_converter_trajs():
-            """
-            Imputes a missing diagnosis if the subject is CN/MCI at baseline and is diagnosed as MCI/Dementia in an earlier follow-up visit.
-            """
-            for dx_bl, dx_conv in [['CN', 'MCI'], ['MCI', 'Dementia']]:
-                for i in range(len(self.df_trajs)):
-                    if self.df_trajs.loc[i, 'DX_0'] == dx_bl:
-                        for year in range(2, 6):
-                            dx_prev = self.df_trajs.loc[i, 'DX_' + str(year - 1)]
-                            if pd.isna(dx_prev) == False:
-                                if dx_prev == dx_conv and pd.isna(self.df_trajs.loc[i, 'DX_' + str(year)]):
-                                    self.df_trajs.loc[i, 'M_' + str(year)] = year * 12
-                                    self.df_trajs.loc[i, 'DX_' + str(year)] = dx_conv
-                                    self.df_trajs.loc[i, 'isimpConv_' + str(year)] = 1
-
+    
         def get_df_ps():
             """
             At this stage, participant selection and label imputation is complete. We create a new df, self.df_ps, for the selected participants.
@@ -207,22 +153,6 @@ class ParticipantSelection:
             self.df_bl = self.df_bl.loc[self.df_bl['RID'].isin(self.df_trajs['RID'])].reset_index(drop=True)
             trajs_cols = np.setdiff1d(list(self.df_trajs.columns), ['RID'])
             self.df_ps = pd.concat([self.df_bl, self.df_trajs[trajs_cols]], axis=1)
-
-        def add_trajectory_labels():
-            """
-            Add the TL (trajectory Label) column for each follow-up year. As described in the manuscript, these trajectory labels will be used for 1)determining sample points' weights and 2)the stratified splitting of data into train, validation, and test sets.
-            """
-            s = [['CN', 'CN'],
-                 ['CN', 'MCI'],
-                 ['MCI', 'MCI'],
-                 ['MCI', 'Dementia']]
-            for i in range(len(self.df_ps)):
-                for year in range(1, 6):
-                    pair = list(self.df_ps.loc[i, ['DX_0', 'DX_' + str(year)]])
-                    if pd.isna(pair).any() == False:
-                        self.df_ps.loc[i, 'TL_' + str(year)] = s.index(pair)
-                    else:
-                        self.df_ps.loc[i, 'TL_' + str(year)] = pd.NA
 
         def get_updated_df_cols():
             """
@@ -245,7 +175,7 @@ class ParticipantSelection:
             Save the selected participants' data as df_ps.csv at directory_to_save.
             Save the dictionary for columns of selected participants' data as df_cols_ps.csv at directory_to_save.
             """
-            self.df_ps.to_csv(self.directory_to_save + 'df_ps1.csv', index=False)
+            self.df_ps.to_csv(self.directory_to_save + 'df_ps.csv', index=False)
             self.df_cols_ps.to_csv(self.directory_to_save + 'df_cols_ps.csv', index=False)
 
         # Apply the methods.
@@ -254,12 +184,8 @@ class ParticipantSelection:
         get_baseline_df()
         remove_reverter_subjects()
         get_df_trajs()
-        # impute_stable_trajs_with_visits_after_year_5()
         remove_no_follow_ups()
         remove_cn_to_dementias()
-        # impute_stable_trajs()
-        # impute_converter_trajs()
         get_df_ps()
-        # add_trajectory_labels()
         get_updated_df_cols()
         write()
