@@ -20,6 +20,6 @@
   In this part we create seprate .csv file for prediction.<br>
   Each file is created with a timespace of 'month' (changeable variable in the code) months.<br>
   The code creates future_of_12m.csv file which contains the same features in df_imputed.csv,<br>
-  but adds a columns called 'Transition' which will be the transition label of each patient in the specific timespace.
+  but adds a columns called 'Transition' which will be the transition label of each patient in the specific timespace.<br>
   Assume month = 12 (1 year) and we get the label CNtoMCI in the Transition column. <br>
   The lable means the patient chnaged his state from CN to MCI in one year.
